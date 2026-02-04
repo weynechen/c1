@@ -155,7 +155,7 @@ fn cmd_init(name: Option<String>) {
         r#"#include <stdio.h>
 
 int main(void) {{
-    printf("Hello {}\\n");
+    printf("Hello {}\n");
     return 0;
 }}
 "#,
@@ -170,6 +170,7 @@ project({} C)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Source files list
 set(SOURCES
@@ -201,7 +202,7 @@ target_include_directories(${{PROJECT_NAME}} PRIVATE
         r#"[project]
 name = "{}"
 version = "0.1.0"
-edition = "99"
+edition = "c99"
 description = "A C project created with c1"
 
 [dependencies]
@@ -232,7 +233,7 @@ cmake --build build
 
 ## Project Structure
 
-```
+```txt
 .
 ├── main.c         # Main entry point
 ├── CMakeLists.txt
@@ -248,8 +249,8 @@ cmake --build build
     fs::write("README.md", readme).expect("Failed to create README.md");
 
     // Create .gitignore
-    let gitignore = r#"# Build directory (but keep it in repo for convenience)
-# /build
+    let gitignore = r#"# Build directory 
+/build
 
 # IDE
 /.idea
@@ -307,7 +308,7 @@ fn cmd_create(name: String) {
     }
 
     // Create header guard macro name
-    let guard_name = format!("C1_{}_H", name.to_uppercase());
+    let guard_name = format!("_{}_H", name.to_uppercase());
 
     // Generate header file content
     let header_content = format!(
