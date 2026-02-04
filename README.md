@@ -1,16 +1,15 @@
 # c1
 
-A modern C project scaffolding tool, inspired by `uv` (Python).
-
-`c1` simplifies C language development by solving the pain point of "tedious initialization".
+A modern C project scaffolding and package management tool, like cargo for C.
 
 ## Features
 
-- **Project Initialization**: Quickly scaffold a new C project with standard directory structure
-- **Module Management**: Atomic creation of source/header file pairs with automatic CMakeLists.txt updates
+- **Project Scaffolding**: `c1 new` / `c1 init` - Create C projects with standard directory structure
+- **Build System**: `c1 build` / `c1 run` - Build and run projects with a single command
+- **Module Management**: `c1 create` - Atomic creation of source/header file pairs
+- **Dependency Management**: `c1 add` / `c1 sync` - Git-based dependency management
 - **Pitchfork Layout**: Enforces standard C project directory structure
 - **Modern CMake**: Automated build configuration management
-- **Simple Dependency Fetching**: Lightweight git clone helper for dependencies (experimental)
 
 ## Installation
 
@@ -26,11 +25,11 @@ The binary will be available at `target/release/c1`.
 
 ## Quick Start
 
-### Initialize a New Project
+### Create a New Project
 
 ```bash
 # Create a new project with its own directory
-c1 init my_project
+c1 new my_project
 cd my_project
 
 # Or initialize in the current directory (must be empty)
@@ -50,7 +49,20 @@ my_project/
 ├── build/              # Build output directory
 ├── include/            # Header files
 ├── src/                # Additional source files
-└── external/           # External dependencies (optional)
+└── external/           # External dependencies
+```
+
+### Build and Run
+
+```bash
+# Build and run (debug mode)
+c1 run
+
+# Build only
+c1 build
+
+# Build in release mode
+c1 build --release
 ```
 
 ### Create a New Module
@@ -65,13 +77,34 @@ This generates:
 
 And automatically updates `CMakeLists.txt` with the new files.
 
+### Add Dependencies
+
+```bash
+# Add a git dependency
+c1 add https://github.com/DaveGamble/cJSON.git
+
+# Add with specific tag
+c1 add https://github.com/weynechen/arc-c.git --tag v0.5.0
+
+# Add with specific branch
+c1 add https://github.com/example/lib.git --branch develop
+
+# Sync all dependencies from project.toml
+c1 sync
+```
+
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `c1 init [name]` | Initialize a new project. Creates a directory if name is provided. |
-| `c1 create <name>` | Create a new module (generates .c and .h files). |
-| `c1 sync` | Simple dependency fetcher (git clone helper). |
+| `c1 new <name>` | Create a new project in a new directory |
+| `c1 init` | Initialize a new project in current directory |
+| `c1 create <name>` | Create a new module (.c and .h files) |
+| `c1 run` | Build and run the project |
+| `c1 build [--release]` | Build the project (debug by default) |
+| `c1 add <url> [--tag/--branch]` | Add a git dependency |
+| `c1 sync` | Sync dependencies from project.toml |
+| `c1 clean` | Clean the build directory |
 
 ## Configuration (project.toml)
 
@@ -79,33 +112,16 @@ And automatically updates `CMakeLists.txt` with the new files.
 [project]
 name = "my_project"
 version = "0.1.0"
-edition = "99"          # C standard: 99, 11, 17
+edition = "c99"
 description = "My awesome C project"
 
 [dependencies]
-# Simple git clone helper (experimental)
-# cjson = { git = "https://github.com/DaveGamble/cJSON.git", tag = "v1.7.18" }
+arc-c = { git = "https://github.com/weynechen/arc-c.git", tag = "v0.5.0" }
+cjson = { git = "https://github.com/DaveGamble/cJSON.git", branch = "master" }
 
 [build]
 compiler = "gcc"
 flags = ["-O3", "-Wall", "-Wextra"]
-```
-
-## Building Your Project
-
-Standard CMake workflow:
-
-```bash
-cmake -B build
-cmake --build build
-```
-
-Or using the pre-created build directory:
-
-```bash
-cd build
-cmake ..
-make
 ```
 
 ## Project Structure
@@ -119,7 +135,7 @@ project_root/
 ├── project.toml        # Project metadata
 ├── README.md
 ├── .gitignore
-├── build/              # Build output (gitignored content, directory kept)
+├── build/              # Build output
 ├── include/            # Public headers
 ├── src/                # Implementation files
 └── external/           # Third-party dependencies
