@@ -335,6 +335,23 @@ fn cmd_create(name: String) {
         std::process::exit(1);
     }
 
+    // Require an initialized c1 project before creating modules
+    if !Path::new("project.toml").exists() && !Path::new("CMakeLists.txt").exists() {
+        eprintln!("Error: Not a c1 project (project.toml / CMakeLists.txt not found).");
+        eprintln!("Hint: Run `c1 init` first to scaffold the project, then `c1 create {}`.", name);
+        std::process::exit(1);
+    }
+
+    // Ensure Pitchfork layout directories exist
+    if let Err(e) = fs::create_dir_all("src") {
+        eprintln!("Error: Failed to create src/ directory: {}", e);
+        std::process::exit(1);
+    }
+    if let Err(e) = fs::create_dir_all("include") {
+        eprintln!("Error: Failed to create include/ directory: {}", e);
+        std::process::exit(1);
+    }
+
     let src_file = format!("src/{}.c", name);
     let header_file = format!("include/{}.h", name);
 
@@ -373,8 +390,16 @@ fn cmd_create(name: String) {
     );
 
     // Write files
-    fs::write(&src_file, src_content).expect("Failed to create source file");
-    fs::write(&header_file, header_content).expect("Failed to create header file");
+    if let Err(e) = fs::write(&src_file, &src_content) {
+        eprintln!("Error: Failed to create {}: {}", src_file, e);
+        std::process::exit(1);
+    }
+    if let Err(e) = fs::write(&header_file, &header_content) {
+        eprintln!("Error: Failed to create {}: {}", header_file, e);
+        // Best-effort rollback of the source file
+        let _ = fs::remove_file(&src_file);
+        std::process::exit(1);
+    }
 
     println!("✓ Created {} and {}", src_file, header_file);
 
@@ -392,14 +417,14 @@ fn update_cmake_lists(module_name: &str) {
 
     let content = fs::read_to_string(cmake_path).expect("Failed to read CMakeLists.txt");
 
-    // Update SOURCES section
+    // Update SOURCES section (placeholder keeps its existing indent on the line)
     let src_placeholder = "# @c1_sources";
-    let src_entry = format!("    src/{}.c\n    {}", module_name, src_placeholder);
+    let src_entry = format!("src/{}.c\n    {}", module_name, src_placeholder);
     let new_content = content.replace(src_placeholder, &src_entry);
 
     // Update HEADERS section
     let header_placeholder = "# @c1_headers";
-    let header_entry = format!("    include/{}.h\n    {}", module_name, header_placeholder);
+    let header_entry = format!("include/{}.h\n    {}", module_name, header_placeholder);
     let new_content = new_content.replace(header_placeholder, &header_entry);
 
     fs::write(cmake_path, new_content).expect("Failed to update CMakeLists.txt");
